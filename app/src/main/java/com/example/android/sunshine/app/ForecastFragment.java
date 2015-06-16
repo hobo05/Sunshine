@@ -12,6 +12,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -86,6 +87,18 @@ public class ForecastFragment extends Fragment {
         // Set the adapter to the dummy data
         listViewForecast.setAdapter(mForecastAdapter);
 
+        // Set click listener for items
+        listViewForecast.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    // Get forecast string from adapter using the position
+                    String forecastDetail = mForecastAdapter.getItem(position);
+                    // Display the toast with the forecast string
+                    makeToast(forecastDetail);
+                }
+            }
+        );
+
         return rootView;
     }
 
@@ -97,7 +110,7 @@ public class ForecastFragment extends Fragment {
         if (itemId == R.id.action_refresh) {
             // Execute task
             makeToast("Start downloading weather data!");
-            new FetchWeatherTask("94034").execute();
+            new FetchWeatherTask("viladecans").execute();
             return true;
         }
         // Call super method
@@ -118,7 +131,7 @@ public class ForecastFragment extends Fragment {
      */
     private void makeToast(String message) {
         Toast toast = Toast.makeText(
-                getActivity().getApplicationContext(),
+                getActivity(),
                 message,
                 Toast.LENGTH_SHORT);
         toast.show();
