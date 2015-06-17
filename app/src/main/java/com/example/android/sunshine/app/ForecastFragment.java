@@ -1,5 +1,6 @@
 package com.example.android.sunshine.app;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -91,10 +92,12 @@ public class ForecastFragment extends Fragment {
         listViewForecast.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    // Get forecast string from adapter using the position
-                    String forecastDetail = mForecastAdapter.getItem(position);
-                    // Display the toast with the forecast string
-                    makeToast(forecastDetail);
+                    // Create explicit intent to call the DetailActivity
+                    Intent detailActivityIntent = new Intent(getActivity(), DetailActivity.class);
+                    // Set the forecast string inside of the intent
+                    String forecastString = mForecastAdapter.getItem(position);
+                    detailActivityIntent.putExtra(Intent.EXTRA_TEXT, forecastString);
+                    startActivity(detailActivityIntent);
                 }
             }
         );
@@ -177,7 +180,9 @@ public class ForecastFragment extends Fragment {
                 // Possible parameters are available at OWM's forecast API page, at
                 // http://openweathermap.org/API#forecast
 
-                Uri weatherUri = Uri.parse("http://api.openweathermap.org/data/2.5")
+                // TODO remove after testing
+                Uri weatherUri = Uri.parse("http://192.168.0.113/data/2.5")
+//                Uri weatherUri = Uri.parse("http://api.openweathermap.org/data/2.5")
                         .buildUpon()
                         .appendPath("forecast")
                         .appendPath("daily")

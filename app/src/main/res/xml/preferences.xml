@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Weather Query (e.g. zip or city) -->
+    <EditTextPreference
+        android:key="@string/pref_location_key"
+        android:title="@string/pref_location_title"
+        android:inputType="text"
+        android:singleLine="true"
+        android:defaultValue="@string/pref_location_default" />
+
+    <!-- Temperature Unit -->
+    <ListPreference
+        android:key="@string/pref_temp_units_key"
+        android:title="@string/pref_temp_units_title"
+        android:dialogTitle="@string/pref_temp_units_title"
+        android:entries="@array/pref_temp_units_entries"
+        android:entryValues="@array/pref_temp_units_values"
+        android:defaultValue="@string/pref_temp_units_default"/>
+</PreferenceScreen>
