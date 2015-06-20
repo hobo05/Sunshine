@@ -2,8 +2,12 @@
     <string name="app_name">Sunshine</string>
     <string name="hello_world">Hello world!</string>
 
-    <string name="action_settings">Settings</string>
-    <string name="action_refresh" translatable="false">Refresh</string>
+    <!-- Menu options -->
+    <string name="action_settings_title">Settings</string>
+    <string name="action_refresh_title">Refresh</string>
+    <string name="action_view_location_title">View Location</string>
+    <string name="action_share_title">Share</string>
+
     <string name="title_activity_detail">DetailActivity</string>
 
     <string name="pref_location_key" translatable="false">pref_location</string>
@@ -13,4 +17,24 @@
     <string name="pref_temp_units_key" translatable="false">pref_temp_units</string>
     <string name="pref_temp_units_title">Temperature Units</string>
     <string name="pref_temp_units_default" translatable="false">metric</string>
+    <string-array name="pref_temp_units_entries">
+        <item>Metric</item>
+        <item>Imperial</item>
+    </string-array>
+    <string-array name="pref_temp_units_values">
+        <item>metric</item>
+        <item>imperial</item>
+    </string-array>
+
+    <string name="pref_weather_server_key">pref_weather_server</string>
+    <string name="pref_weather_server_title">Weather Server</string>
+    <string name="pref_weather_server_default">OPEN_WEATHER_API</string>
+    <string-array name="pref_weather_server_entries">
+        <item>Open Weather API</item>
+        <item>Test Server</item>
+    </string-array>
+    <string-array name="pref_weather_server_values">
+        <item>OPEN_WEATHER_API</item>
+        <item>TEST_SERVER</item>
+    </string-array>
 </resources>

@@ -1,9 +1,11 @@
 package com.example.android.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -30,8 +32,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 
 
@@ -43,6 +43,8 @@ public class ForecastFragment extends Fragment {
     private final String LOG_TAG = ForecastFragment.class.getSimpleName();
 
     private ArrayAdapter<String> mForecastAdapter;
+    private double longitude;
+    private double latitude;
 
     public ForecastFragment() {}
 
@@ -58,17 +60,6 @@ public class ForecastFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        List<String> weatherDataList = new ArrayList<String>();
-        weatherDataList.add("Today - Sunny - 88/63");
-        weatherDataList.add("Tomorrow - Foggy - 70/46");
-        weatherDataList.add("Weds - Cloudy - 72/63");
-        weatherDataList.add("Thurs - Rainy - 64/51");
-        weatherDataList.add("Fri - Foggy - 70/46");
-        weatherDataList.add("Sat - Sunny - 76/68");
-
-        // Duplicated list to see scrolling effect
-        weatherDataList.addAll(Arrays.asList(weatherDataList.toArray(new String[weatherDataList.size()])));
-
         // Create an ArrayAdapter that will act as the datasource of the ListView
         mForecastAdapter = new ArrayAdapter<String>(
                 // The current context, the fragment's parent activity
@@ -78,7 +69,7 @@ public class ForecastFragment extends Fragment {
                 // ID of the TextView to populate
                 R.id.list_item_forecast_textview,
                 // Forecast data
-                weatherDataList);
+                new ArrayList<String>());
 
         // Inflates fragment and create root view
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
@@ -89,20 +80,28 @@ public class ForecastFragment extends Fragment {
         listViewForecast.setAdapter(mForecastAdapter);
 
         // Set click listener for items
-        listViewForecast.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    // Create explicit intent to call the DetailActivity
-                    Intent detailActivityIntent = new Intent(getActivity(), DetailActivity.class);
-                    // Set the forecast string inside of the intent
-                    String forecastString = mForecastAdapter.getItem(position);
-                    detailActivityIntent.putExtra(Intent.EXTRA_TEXT, forecastString);
-                    startActivity(detailActivityIntent);
+        listViewForecast.setOnItemClickListener(
+                new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        // Create explicit intent to call the DetailActivity
+                        Intent detailActivityIntent = new Intent(getActivity(), DetailActivity.class);
+                        // Set the forecast string inside of the intent
+                        String forecastString = mForecastAdapter.getItem(position);
+                        detailActivityIntent.putExtra(Intent.EXTRA_TEXT, forecastString);
+                        startActivity(detailActivityIntent);
+                    }
                 }
-            }
         );
 
         return rootView;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Update weather on start
+        updateWeather();
     }
 
     @Override
@@ -111,13 +110,51 @@ public class ForecastFragment extends Fragment {
         // find out when it is selected
         int itemId = item.getItemId();
         if (itemId == R.id.action_refresh) {
-            // Execute task
-            makeToast("Start downloading weather data!");
-            new FetchWeatherTask("viladecans").execute();
+            updateWeather();
             return true;
+        } else if (itemId == R.id.action_view_location) {
+            // Build URI for map intent
+            Uri coordinatesUri = Uri.parse(String.format("geo:%f,%f", latitude, longitude));
+            Log.v(LOG_TAG, "Coordinate URI: " + coordinatesUri.toString());
+
+            Intent mapIntent = new Intent();
+            mapIntent.setAction(Intent.ACTION_VIEW);
+            mapIntent.setData(coordinatesUri);
+            if (mapIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+                startActivity(mapIntent);
+            } else {
+                makeToast("Error! Could not find an appropriate map application!");
+                Log.e(LOG_TAG, "Could not find activity for map intent");
+            }
+
+
         }
         // Call super method
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * Updates the current weather with the location specified in the preferences
+     */
+    private void updateWeather() {
+        // Get location preference, if not found, load default
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = preferences.getString(
+                getString(R.string.pref_location_key),
+                getString(R.string.pref_location_default));
+        // Get units string, if not found, load default
+        Units units = Units.valueOf(preferences.getString(
+                getString(R.string.pref_temp_units_key),
+                getString(R.string.pref_temp_units_default)));
+        // Get weather server
+        WeatherServer weatherServer = WeatherServer.valueOf(
+                preferences.getString(
+                        getString(R.string.pref_weather_server_key),
+                        getString(R.string.pref_weather_server_default)));
+
+        // Execute task
+        makeToast(String.format("Start downloading weather data from %s!", location));
+        new FetchWeatherTask(weatherServer, location, units).execute();
     }
 
     @Override
@@ -140,6 +177,19 @@ public class ForecastFragment extends Fragment {
         toast.show();
     }
 
+    /**
+     * Enum representing the units for the weather
+     */
+    private enum Units {
+        metric,
+        imperial
+    }
+
+    private enum WeatherServer {
+        OPEN_WEATHER_API,
+        TEST_SERVER
+    }
+
     private class FetchWeatherTask extends AsyncTask<Void, Void, String[]> {
 
         public static final int DAYS = 7;
@@ -154,15 +204,21 @@ public class ForecastFragment extends Fragment {
         public static final String PARAM_DAYS = "cnt";
         public static final String PARAM_APPID = "APPID";
 
+        private WeatherServer weatherServer;
         private String query;
+        private Units units;
 
         /**
          * Constructor that takes any query for the weather api
          *
+         * @param weatherServer Server to get weather data from
          * @param query the query to use when fetching the weather data
+         * @param units the units for the weather temperature
          */
-        public FetchWeatherTask(String query) {
+        public FetchWeatherTask(WeatherServer weatherServer, String query, Units units) {
+            this.weatherServer = weatherServer;
             this.query = query;
+            this.units = units;
         }
 
         @Override
@@ -181,9 +237,20 @@ public class ForecastFragment extends Fragment {
                 // http://openweathermap.org/API#forecast
 
                 // TODO remove after testing
-                Uri weatherUri = Uri.parse("http://192.168.0.113/data/2.5")
-//                Uri weatherUri = Uri.parse("http://api.openweathermap.org/data/2.5")
+                String baseUrl = null;
+                switch (weatherServer) {
+                    case OPEN_WEATHER_API:
+                        baseUrl = "http://api.openweathermap.org";
+                        break;
+                    case TEST_SERVER:
+                        baseUrl = "http://192.168.0.113";
+                    default:
+                }
+
+                Uri weatherUri = Uri.parse(baseUrl)
                         .buildUpon()
+                        .appendPath("data")
+                        .appendPath("2.5")
                         .appendPath("forecast")
                         .appendPath("daily")
                         .appendQueryParameter(PARAM_QUERY, query)
@@ -307,8 +374,18 @@ public class ForecastFragment extends Fragment {
             final String OWM_MAX = "max";
             final String OWM_MIN = "min";
             final String OWM_DESCRIPTION = "main";
+            final String OWM_CITY = "city";
+            final String OWM_COORDINATES = "coord";
 
             JSONObject forecastJson = new JSONObject(forecastJsonStr);
+
+            // Set the coordinates so we can use it for our map intent
+            JSONObject coordinateJson = forecastJson
+                    .getJSONObject(OWM_CITY)
+                    .getJSONObject(OWM_COORDINATES);
+            latitude = coordinateJson.getDouble("lat");
+            longitude = coordinateJson.getDouble("lon");
+
             JSONArray weatherArray = forecastJson.getJSONArray(OWM_LIST);
 
             // OWM returns daily forecasts based upon the local time of the city that is being
@@ -356,12 +433,28 @@ public class ForecastFragment extends Fragment {
                 double high = temperatureObject.getDouble(OWM_MAX);
                 double low = temperatureObject.getDouble(OWM_MIN);
 
+                // Change to imperial units if specified
+                if (this.units == Units.imperial) {
+                    high = convertToFahrenheit(high);
+                    low = convertToFahrenheit(low);
+                }
+
                 highAndLow = formatHighLows(high, low);
                 resultStrs[i] = day + " - " + description + " - " + highAndLow;
             }
 
             return resultStrs;
 
+        }
+
+        /**
+         * Covnerts Fahrenheit to Celsius
+         *
+         * @param celsius the given celsius
+         * @return the resulting Fahrenheit
+         */
+        private double convertToFahrenheit(double celsius) {
+            return celsius * 1.8 + 32;
         }
     }
 }

@@ -19,9 +19,12 @@ package com.example.android.sunshine.app;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.ShareActionProvider;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -70,7 +73,39 @@ public class DetailActivity extends ActionBarActivity {
      */
     public static class PlaceholderFragment extends Fragment {
 
+        private ShareActionProvider mShareActionProvider;
+
+        private String forecastString = null;
+
         public PlaceholderFragment() {
+        }
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+
+            // Indicate that this activity has a menu
+            setHasOptionsMenu(true);
+        }
+
+        @Override
+        public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+            inflater.inflate(R.menu.detailfragment, menu);
+
+            // Locate MenuItem with ShareActionProvider
+            MenuItem item = menu.findItem(R.id.action_share);
+
+            // Get the provider and hold onto it to set/change the share intent.
+            // We can't directly cast it because we're using the support library and
+            // we have to use the MenuItemCompat class
+            mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
+
+            if (mShareActionProvider != null) {
+                Intent shareIntent = createShareIntent();
+
+                // Set the share intent into the ShareActionProvider
+                setShareIntent(shareIntent);
+            }
         }
 
         @Override
@@ -84,10 +119,36 @@ public class DetailActivity extends ActionBarActivity {
             Intent intent = getActivity().getIntent();
             TextView weatherDetailView = (TextView) rootView.findViewById(R.id.fragment_detail_textview);
             if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) {
-                weatherDetailView.setText(intent.getStringExtra(Intent.EXTRA_TEXT));
+                // Retrieve the weather string and set it to the detail view
+                forecastString = intent.getStringExtra(Intent.EXTRA_TEXT);
+                weatherDetailView.setText(forecastString);
             }
 
             return rootView;
+        }
+
+        /**
+         * Create a share {@link Intent} with the forecast string set inside
+         * @return
+         */
+        private Intent createShareIntent() {
+            // Also create a share intent
+            Intent shareIntent = new Intent();
+            // When context switching, makes sure that you will
+            // always switch back to your own app, instead of the one that is called by the intent
+            shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+            shareIntent.setAction(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_TEXT,
+                    String.format("%s #SunshineApp", forecastString));
+            return shareIntent;
+        }
+
+        // Call to update the share intent
+        private void setShareIntent(Intent shareIntent) {
+            if (mShareActionProvider != null) {
+                mShareActionProvider.setShareIntent(shareIntent);
+            }
         }
     }
 }

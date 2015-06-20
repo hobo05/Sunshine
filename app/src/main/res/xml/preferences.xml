@@ -16,4 +16,13 @@
         android:entries="@array/pref_temp_units_entries"
         android:entryValues="@array/pref_temp_units_values"
         android:defaultValue="@string/pref_temp_units_default"/>
+
+    <!-- Weather Server -->
+    <ListPreference
+        android:key="@string/pref_weather_server_key"
+        android:title="@string/pref_weather_server_title"
+        android:dialogTitle="@string/pref_weather_server_title"
+        android:entries="@array/pref_weather_server_entries"
+        android:entryValues="@array/pref_weather_server_values"
+        android:defaultValue="@string/pref_weather_server_default"/>
 </PreferenceScreen>
