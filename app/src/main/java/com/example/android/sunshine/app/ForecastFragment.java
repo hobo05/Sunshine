@@ -243,7 +243,7 @@ public class ForecastFragment extends Fragment {
                         baseUrl = "http://api.openweathermap.org";
                         break;
                     case TEST_SERVER:
-                        baseUrl = "http://192.168.0.113";
+                        baseUrl = "http://192.168.0.104";
                     default:
                 }
 
