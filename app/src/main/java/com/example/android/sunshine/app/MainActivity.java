@@ -75,4 +75,10 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         Log.v(LOG_TAG, "onDestroy");
     }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        Log.v(LOG_TAG, "onSaveInstanceState");
+        super.onSaveInstanceState(outState);
+    }
 }
