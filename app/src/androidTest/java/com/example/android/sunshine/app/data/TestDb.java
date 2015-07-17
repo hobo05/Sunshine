@@ -15,11 +15,14 @@
  */
 package com.example.android.sunshine.app.data;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.test.AndroidTestCase;
 
 import java.util.HashSet;
+
+import static com.example.android.sunshine.app.data.WeatherContract.LocationEntry;
 
 public class TestDb extends AndroidTestCase {
 
@@ -115,19 +118,33 @@ public class TestDb extends AndroidTestCase {
 
         // Create ContentValues of what you want to insert
         // (you can use the createNorthPoleLocationValues if you wish)
+        ContentValues northPoleContentValues = TestUtilities.createNorthPoleLocationValues();
 
         // Insert ContentValues into database and get a row ID back
+        WeatherDbHelper dbHelper = new WeatherDbHelper(mContext);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        long locationRowId = db.insert(LocationEntry.TABLE_NAME, null, northPoleContentValues);
+
+        // Verify we got a row back.
+        assertTrue("Error: Failure to insert North Pole Location Values", locationRowId != -1);
 
         // Query the database and receive a Cursor back
+        Cursor c = db.query(LocationEntry.TABLE_NAME, null, null, null, null, null, null);
 
         // Move the cursor to a valid database row
+        assertTrue("Error: This means that we were unable to find the north pole location we inserted.",
+                c.moveToFirst());
 
         // Validate data in resulting Cursor with the original ContentValues
         // (you can use the validateCurrentRecord function in TestUtilities to validate the
         // query if you like)
+        TestUtilities.validateCurrentRecord(
+                "Error: The values inserted for the north pole did not match what was retrieved",
+                c, northPoleContentValues);
 
         // Finally, close the cursor and database
-
+        c.close();
+        db.close();
     }
 
     /*
